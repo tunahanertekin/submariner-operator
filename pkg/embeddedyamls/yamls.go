@@ -2260,14 +2260,11 @@ rules:
   - apiGroups:
       - ""
     resources:
-      - pods
       - services
       - services/finalizers
       - endpoints
-      - persistentvolumeclaims
       - events
       - configmaps
-      - secrets
     verbs:
       - '*'
   - apiGroups:
@@ -2419,14 +2416,11 @@ rules:
   - apiGroups:
       - ""
     resources:
-      - pods
       - services
       - services/finalizers
       - endpoints
-      - persistentvolumeclaims
       - events
       - configmaps
-      - secrets
     verbs:
       - '*'
   - apiGroups:
@@ -2542,7 +2536,6 @@ rules:
       - get
       - list
       - watch
-      - update
     resources:
       - nodes
 `
