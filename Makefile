@@ -32,8 +32,10 @@ PATTERN := ^([0-9]|[1-9][0-9]*)\.([0-9]|[1-9][0-9]*)\.([0-9]|[1-9][0-9]*)$
 # Test if VERSION matches the semantic versioning rule
 IS_SEMANTIC_VERSION = $(shell [[ $(or $(BUNDLE_VERSION),$(VERSION),'undefined') =~ $(PATTERN) ]] && echo true || echo false)
 
+PLATFORMS ?= linux/amd64,linux/arm64
 IMAGES = submariner-operator submariner-operator-index subctl
 PRELOAD_IMAGES := $(IMAGES) submariner-gateway submariner-globalnet submariner-route-agent lighthouse-agent lighthouse-coredns
+MULTIARCH_IMAGES := submariner-operator subctl
 undefine SKIP
 undefine FOCUS
 undefine E2E_TESTDIR
@@ -45,6 +47,9 @@ SETTINGS = $(DAPPER_SOURCE)/.shipyard.e2e.yml
 endif
 
 include $(SHIPYARD_DIR)/Makefile.inc
+
+gotodockerarch = $(patsubst arm,arm/v7,$(1))
+dockertogoarch = $(patsubst arm/v7,arm,$(1))
 
 CROSS_TARGETS := linux-amd64 linux-arm64 linux-arm linux-s390x linux-ppc64le windows-amd64.exe darwin-amd64
 BINARIES := bin/subctl
@@ -131,8 +136,6 @@ export PATH := $(CURDIR)/bin:$(PATH)
 
 # Targets to make
 
-images: build
-
 # Build subctl before deploying to ensure we use that
 # (with the PATH set above)
 deploy: bin/subctl
@@ -148,18 +151,12 @@ build: $(BINARIES)
 build-cross: $(CROSS_TARBALLS)
 
 licensecheck: BUILD_ARGS=--noupx
-licensecheck: build bin/submariner-operator | bin/lichen
-	bin/lichen -c .lichen.yaml $(BINARIES) bin/submariner-operator
+licensecheck: build bin/linux/amd64/submariner-operator | bin/lichen
+	bin/lichen -c .lichen.yaml $(BINARIES) bin/linux/amd64/submariner-operator
 
 bin/lichen: $(VENDOR_MODULES)
 	mkdir -p $(@D)
 	$(GO) build -o $@ github.com/uw-labs/lichen
-
-package/Dockerfile.submariner-operator: bin/submariner-operator
-
-package/Dockerfile.submariner-operator-index: packagemanifests
-
-package/Dockerfile.subctl: bin/subctl
 
 # Generate deep-copy code
 CONTROLLER_DEEPCOPY := api/submariner/v1alpha1/zz_generated.deepcopy.go
@@ -171,8 +168,8 @@ EMBEDDED_YAMLS := pkg/embeddedyamls/yamls.go
 $(EMBEDDED_YAMLS): pkg/embeddedyamls/generators/yamls2go.go deploy/crds/submariner.io_servicediscoveries.yaml deploy/crds/submariner.io_brokers.yaml deploy/crds/submariner.io_submariners.yaml deploy/submariner/crds/submariner.io_clusters.yaml deploy/submariner/crds/submariner.io_endpoints.yaml deploy/submariner/crds/submariner.io_gateways.yaml $(shell find deploy/ -name "*.yaml") $(shell find config/rbac/ -name "*.yaml") $(VENDOR_MODULES) $(CONTROLLER_DEEPCOPY)
 	$(GO) generate pkg/embeddedyamls/generate.go
 
-bin/submariner-operator: $(VENDOR_MODULES) main.go $(EMBEDDED_YAMLS)
-	${SCRIPTS_DIR}/compile.sh \
+bin/%/submariner-operator: $(VENDOR_MODULES) main.go $(EMBEDDED_YAMLS)
+	GOARCH=$(call dockertogoarch,$(patsubst bin/linux/%/,%,$(dir $@))) ${SCRIPTS_DIR}/compile.sh \
 	--ldflags "-X=github.com/submariner-io/submariner-operator/pkg/version.Version=$(VERSION)" \
 	$@ main.go $(BUILD_ARGS)
 
@@ -187,6 +184,7 @@ dist/subctl-%.tar.xz: bin/subctl-%
 	tar -cJf $@ --transform "s/^bin/subctl-$(VERSION)/" $<
 
 # Versions may include hyphens so it's easier to use $(VERSION) than to extract them from the target
+.PRECIOUS: bin/subctl-%
 bin/subctl-%: $(EMBEDDED_YAMLS) $(shell find pkg/subctl/ -name "*.go") $(VENDOR_MODULES)
 	mkdir -p $(@D)
 	target=$@; \
@@ -199,6 +197,11 @@ bin/subctl-%: $(EMBEDDED_YAMLS) $(shell find pkg/subctl/ -name "*.go") $(VENDOR_
 		--ldflags "-X 'github.com/submariner-io/submariner-operator/pkg/version.Version=$(VERSION)' \
 			   -X 'github.com/submariner-io/submariner-operator/api/submariner/v1alpha1.DefaultSubmarinerOperatorVersion=$${DEFAULT_IMAGE_VERSION#v}'" \
 		--noupx $@ ./pkg/subctl/main.go $(BUILD_ARGS)
+
+# Special case for Linux container builds
+bin/linux/%/subctl: bin/subctl-$(VERSION)-linux-%
+	mkdir -p $(dir $@)
+	ln -sf ../../$(<F) $@
 
 cmd/bin/subctl-%: $(shell find cmd/ -name "*.go") $(VENDOR_MODULES)
 	mkdir -p cmd/bin
