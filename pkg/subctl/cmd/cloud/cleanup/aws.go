@@ -20,39 +20,32 @@ package cleanup
 
 import (
 	"github.com/spf13/cobra"
-	"github.com/submariner-io/admiral/pkg/reporter"
-	"github.com/submariner-io/cloud-prepare/pkg/api"
 	"github.com/submariner-io/submariner-operator/internal/cli"
 	"github.com/submariner-io/submariner-operator/internal/exit"
+	"github.com/submariner-io/submariner-operator/internal/restconfig"
+	cloudaws "github.com/submariner-io/submariner-operator/pkg/cloud/aws"
+	"github.com/submariner-io/submariner-operator/pkg/cloud/cleanup"
 	"github.com/submariner-io/submariner-operator/pkg/subctl/cmd/cloud/aws"
 )
 
+var config cloudaws.Config
+
 // NewCommand returns a new cobra.Command used to prepare a cloud infrastructure.
-func newAWSCleanupCommand() *cobra.Command {
+func newAWSCleanupCommand(restConfigProducer restconfig.Producer) *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "aws",
 		Short: "Clean up an AWS cloud",
 		Long: "This command cleans up an OpenShift installer-provisioned infrastructure (IPI) on AWS-based" +
 			" cloud after Submariner uninstallation.",
-		Run: cleanupAws,
+		Run: func(cmd *cobra.Command, args []string) {
+			status := cli.NewReporter()
+
+			err := cleanup.AWS(&restConfigProducer, status)
+			exit.OnError(err)
+		},
 	}
 
-	aws.AddAWSFlags(cmd)
+	aws.AddAWSFlags(cmd, &config)
 
 	return cmd
-}
-
-func cleanupAws(cmd *cobra.Command, args []string) {
-	err := aws.RunOnAWS(*parentRestConfigProducer, "", cli.NewReporter(),
-		// nolint:wrapcheck // No need to wrap errors here
-		func(cloud api.Cloud, gwDeployer api.GatewayDeployer, status reporter.Interface) error {
-			err := gwDeployer.Cleanup(status)
-			if err != nil {
-				return err
-			}
-
-			return cloud.CleanupAfterSubmariner(status)
-		})
-
-	exit.OnError(err)
 }

@@ -16,22 +16,11 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package main
+package cloud
 
-import (
-	"fmt"
-	"os"
-
-	"github.com/submariner-io/submariner-operator/pkg/subctl/cmd"
-	_ "github.com/submariner-io/submariner-operator/pkg/subctl/cmd/cloud"
-	_ "github.com/submariner-io/submariner-operator/pkg/subctl/cmd/diagnose"
-	_ "github.com/submariner-io/submariner-operator/pkg/subctl/cmd/show"
-)
-
-func main() {
-	err := cmd.Execute()
-	if err != nil {
-		fmt.Println("Error: ", err.Error())
-		os.Exit(1)
-	}
+type Ports struct {
+	Natt         uint16
+	NatDiscovery uint16
+	Vxlan        uint16
+	Metrics      uint16
 }

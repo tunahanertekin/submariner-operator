@@ -16,22 +16,17 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package main
+package prepare
 
 import (
 	"fmt"
-	"os"
 
-	"github.com/submariner-io/submariner-operator/pkg/subctl/cmd"
-	_ "github.com/submariner-io/submariner-operator/pkg/subctl/cmd/cloud"
-	_ "github.com/submariner-io/submariner-operator/pkg/subctl/cmd/diagnose"
-	_ "github.com/submariner-io/submariner-operator/pkg/subctl/cmd/show"
+	"github.com/submariner-io/submariner-operator/internal/exit"
 )
 
-func main() {
-	err := cmd.Execute()
-	if err != nil {
-		fmt.Println("Error: ", err.Error())
-		os.Exit(1)
+// expectFlag exits with an error if the flag value is empty.
+func expectFlag(flag, value string) {
+	if value == "" {
+		exit.WithMessage(fmt.Sprintf("You must specify the %v flag", flag))
 	}
 }

@@ -23,48 +23,40 @@ import (
 	"context"
 	"fmt"
 	"os"
-	"strings"
 	"time"
 
-	"github.com/spf13/cobra"
+	"github.com/submariner-io/admiral/pkg/reporter"
+	"github.com/submariner-io/admiral/pkg/stringset"
 	"github.com/submariner-io/submariner-operator/internal/cli"
 	"github.com/submariner-io/submariner-operator/internal/component"
+	"github.com/submariner-io/submariner-operator/internal/constants"
 	"github.com/submariner-io/submariner-operator/internal/exit"
 	"github.com/submariner-io/submariner-operator/internal/restconfig"
 	"github.com/submariner-io/submariner-operator/pkg/brokercr"
 	"github.com/submariner-io/submariner-operator/pkg/client"
+	"github.com/submariner-io/submariner-operator/pkg/cluster"
 	"github.com/submariner-io/submariner-operator/pkg/names"
-	"github.com/submariner-io/submariner-operator/pkg/subctl/cmd"
 	corev1 "k8s.io/api/core/v1"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/rest"
 )
 
-var (
-	gatherType           string
-	gatherModule         string
-	directory            string
-	includeSensitiveData bool
-	restConfigProducer   = restconfig.NewProducer()
-)
+type Options struct {
+	Directory            string
+	IncludeSensitiveData bool
+	Modules              []string
+	Types                []string
+}
 
 const (
 	Logs      = "logs"
 	Resources = "resources"
 )
 
-var gatherModuleFlags = map[string]bool{
-	component.Connectivity:     false,
-	component.ServiceDiscovery: false,
-	component.Broker:           false,
-	component.Operator:         false,
-}
+var AllModules = stringset.New(component.Connectivity, component.ServiceDiscovery, component.Broker, component.Operator)
 
-var gatherTypeFlags = map[string]bool{
-	"logs":      false,
-	"resources": false,
-}
+var AllTypes = stringset.New(Logs, Resources)
 
 var gatherFuncs = map[string]func(string, Info) bool{
 	component.Connectivity:     gatherConnectivity,
@@ -73,58 +65,27 @@ var gatherFuncs = map[string]func(string, Info) bool{
 	component.Operator:         gatherOperator,
 }
 
-func init() {
-	restConfigProducer.AddKubeContextMultiFlag(gatherCmd, "")
-	addGatherFlags(gatherCmd)
-	cmd.AddToRootCommand(gatherCmd)
-}
-
-func addGatherFlags(gatherCmd *cobra.Command) {
-	gatherCmd.Flags().StringVar(&gatherType, "type", strings.Join(getAllTypeKeys(), ","),
-		"comma-separated list of data types to gather")
-	gatherCmd.Flags().StringVar(&gatherModule, "module", strings.Join(getAllModuleKeys(), ","),
-		"comma-separated list of components for which to gather data")
-	gatherCmd.Flags().StringVar(&directory, "dir", "",
-		"the directory in which to store files. If not specified, a directory of the form \"submariner-<timestamp>\" "+
-			"is created in the current directory")
-	gatherCmd.Flags().BoolVar(&includeSensitiveData, "include-sensitive-data", false,
-		"do not redact sensitive data such as credentials and security tokens")
-}
-
-var gatherCmd = &cobra.Command{
-	Use:   "gather",
-	Short: "Gather troubleshooting information from a cluster",
-	Long: fmt.Sprintf("This command gathers information from a submariner cluster for troubleshooting. The information gathered "+
-		"can be selected by component (%v) and type (%v). Default is to capture all data.",
-		strings.Join(getAllModuleKeys(), ","), strings.Join(getAllTypeKeys(), ",")),
-	Run: func(command *cobra.Command, args []string) {
-		cmd.ExecuteMultiCluster(restConfigProducer, gatherData)
-	},
-}
-
-func gatherData(cluster *cmd.Cluster) bool {
+func Data(clusterInfo *cluster.Info, status reporter.Interface, options Options) bool {
 	var warningsBuf bytes.Buffer
-	err := checkGatherArguments()
-	exit.OnErrorWithMessage(err, "Invalid arguments")
 
 	rest.SetDefaultWarningHandler(rest.NewWarningWriter(&warningsBuf, rest.WarningWriterOptions{
 		Deduplicate: true,
 	}))
 
-	if directory == "" {
-		directory = "submariner-" + time.Now().UTC().Format("20060102150405") // submariner-YYYYMMDDHHMMSS
+	if options.Directory == "" {
+		options.Directory = "submariner-" + time.Now().UTC().Format("20060102150405") // submariner-YYYYMMDDHHMMSS
 	}
 
-	if _, err := os.Stat(directory); os.IsNotExist(err) {
-		err := os.MkdirAll(directory, 0o700)
+	if _, err := os.Stat(options.Directory); os.IsNotExist(err) {
+		err := os.MkdirAll(options.Directory, 0o700)
 		if err != nil {
-			exit.OnErrorWithMessage(err, fmt.Sprintf("Error creating directory %q", directory))
+			exit.OnErrorWithMessage(err, fmt.Sprintf("Error creating directory %q", options.Directory))
 		}
 	}
 
-	gatherDataByCluster(cluster, directory)
+	gatherDataByCluster(clusterInfo, status, options)
 
-	fmt.Printf("Files are stored under directory %q\n", directory)
+	fmt.Printf("Files are stored under directory %q\n", options.Directory)
 
 	warnings := warningsBuf.String()
 	if warnings != "" {
@@ -134,31 +95,23 @@ func gatherData(cluster *cmd.Cluster) bool {
 	return true
 }
 
-func gatherDataByCluster(cluster *cmd.Cluster, directory string) {
+func gatherDataByCluster(clusterInfo *cluster.Info, status reporter.Interface, options Options) {
 	var err error
-	clusterName := cluster.Name
-	status := cli.NewReporter()
-
-	clientProducer, err := client.NewProducerFromRestConfig(cluster.Config)
-	if err != nil {
-		status.Failure("Error creating client producer")
-
-		return
-	}
+	clusterName := clusterInfo.Name
 
 	fmt.Printf("Gathering information from cluster %q\n", clusterName)
 
 	info := Info{
-		RestConfig:           cluster.Config,
+		RestConfig:           clusterInfo.RestConfig,
 		ClusterName:          clusterName,
-		DirName:              directory,
-		IncludeSensitiveData: includeSensitiveData,
+		DirName:              options.Directory,
+		IncludeSensitiveData: options.IncludeSensitiveData,
 		Summary:              &Summary{},
-		ClientProducer:       clientProducer,
-		Submariner:           cluster.Submariner,
+		ClientProducer:       clusterInfo.ClientProducer,
+		Submariner:           clusterInfo.Submariner,
 	}
 
-	info.ServiceDiscovery, err = clientProducer.ForOperator().SubmarinerV1alpha1().ServiceDiscoveries(cmd.OperatorNamespace).
+	info.ServiceDiscovery, err = clusterInfo.ClientProducer.ForOperator().SubmarinerV1alpha1().ServiceDiscoveries(constants.OperatorNamespace).
 		Get(context.TODO(), names.ServiceDiscoveryCrName, metav1.GetOptions{})
 	if err != nil {
 		info.ServiceDiscovery = nil
@@ -169,16 +122,12 @@ func gatherDataByCluster(cluster *cmd.Cluster, directory string) {
 		}
 	}
 
-	for module, ok := range gatherModuleFlags {
-		if ok {
-			for dataType, ok := range gatherTypeFlags {
-				if ok {
-					info.Status = cli.NewReporter()
-					info.Status.Start("Gathering %s %s", module, dataType)
-					gatherFuncs[module](dataType, info)
-					info.Status.End()
-				}
-			}
+	for _, module := range options.Modules {
+		for _, dataType := range options.Types {
+			info.Status = cli.NewReporter()
+			info.Status.Start("Gathering %s %s", module, dataType)
+			gatherFuncs[module](dataType, info)
+			info.Status.End()
 		}
 	}
 
@@ -202,9 +151,9 @@ func gatherConnectivity(dataType string, info Info) bool {
 		gatherCNIResources(&info, info.Submariner.Status.NetworkPlugin)
 		gatherCableDriverResources(&info, info.Submariner.Spec.CableDriver)
 		gatherOVNResources(&info, info.Submariner.Status.NetworkPlugin)
-		gatherEndpoints(&info, cmd.SubmarinerNamespace)
-		gatherClusters(&info, cmd.SubmarinerNamespace)
-		gatherGateways(&info, cmd.SubmarinerNamespace)
+		gatherEndpoints(&info, constants.SubmarinerNamespace)
+		gatherClusters(&info, constants.SubmarinerNamespace)
+		gatherGateways(&info, constants.SubmarinerNamespace)
 		gatherClusterGlobalEgressIPs(&info)
 		gatherGlobalEgressIPs(&info)
 		gatherGlobalIngressIPs(&info)
@@ -230,7 +179,7 @@ func gatherDiscovery(dataType string, info Info) bool {
 		gatherServiceExports(&info, corev1.NamespaceAll)
 		gatherServiceImports(&info, corev1.NamespaceAll)
 		gatherEndpointSlices(&info, corev1.NamespaceAll)
-		gatherConfigMapLighthouseDNS(&info, cmd.SubmarinerNamespace)
+		gatherConfigMapLighthouseDNS(&info, constants.SubmarinerNamespace)
 		gatherConfigMapCoreDNS(&info)
 		gatherLabeledServices(&info, internalSvcLabel)
 	default:
@@ -259,7 +208,7 @@ func gatherBroker(dataType string, info Info) bool {
 				return true
 			}
 		} else {
-			_, err = info.ClientProducer.ForOperator().SubmarinerV1alpha1().Brokers(cmd.OperatorNamespace).Get(
+			_, err = info.ClientProducer.ForOperator().SubmarinerV1alpha1().Brokers(constants.OperatorNamespace).Get(
 				context.TODO(), brokercr.Name, metav1.GetOptions{})
 			if apierrors.IsNotFound(err) {
 				return false
@@ -293,60 +242,18 @@ func gatherOperator(dataType string, info Info) bool {
 	case Logs:
 		gatherSubmarinerOperatorPodLogs(&info)
 	case Resources:
-		gatherSubmariners(&info, cmd.SubmarinerNamespace)
-		gatherServiceDiscoveries(&info, cmd.SubmarinerNamespace)
-		gatherSubmarinerOperatorDeployment(&info, cmd.SubmarinerNamespace)
-		gatherGatewayDaemonSet(&info, cmd.SubmarinerNamespace)
-		gatherRouteAgentDaemonSet(&info, cmd.SubmarinerNamespace)
-		gatherGlobalnetDaemonSet(&info, cmd.SubmarinerNamespace)
-		gatherNetworkPluginSyncerDeployment(&info, cmd.SubmarinerNamespace)
-		gatherLighthouseAgentDeployment(&info, cmd.SubmarinerNamespace)
-		gatherLighthouseCoreDNSDeployment(&info, cmd.SubmarinerNamespace)
+		gatherSubmariners(&info, constants.SubmarinerNamespace)
+		gatherServiceDiscoveries(&info, constants.SubmarinerNamespace)
+		gatherSubmarinerOperatorDeployment(&info, constants.SubmarinerNamespace)
+		gatherGatewayDaemonSet(&info, constants.SubmarinerNamespace)
+		gatherRouteAgentDaemonSet(&info, constants.SubmarinerNamespace)
+		gatherGlobalnetDaemonSet(&info, constants.SubmarinerNamespace)
+		gatherNetworkPluginSyncerDeployment(&info, constants.SubmarinerNamespace)
+		gatherLighthouseAgentDeployment(&info, constants.SubmarinerNamespace)
+		gatherLighthouseCoreDNSDeployment(&info, constants.SubmarinerNamespace)
 	default:
 		return false
 	}
 
 	return true
-}
-
-func checkGatherArguments() error {
-	gatherTypeList := strings.Split(gatherType, ",")
-	for _, arg := range gatherTypeList {
-		if _, found := gatherTypeFlags[arg]; !found {
-			return fmt.Errorf("%s is not a supported type", arg)
-		}
-
-		gatherTypeFlags[arg] = true
-	}
-
-	gatherModuleList := strings.Split(gatherModule, ",")
-	for _, arg := range gatherModuleList {
-		if _, found := gatherModuleFlags[arg]; !found {
-			return fmt.Errorf("%s is not a supported module", arg)
-		}
-
-		gatherModuleFlags[arg] = true
-	}
-
-	return nil
-}
-
-func getAllTypeKeys() []string {
-	keys := []string{}
-
-	for k := range gatherTypeFlags {
-		keys = append(keys, k)
-	}
-
-	return keys
-}
-
-func getAllModuleKeys() []string {
-	keys := []string{}
-
-	for k := range gatherModuleFlags {
-		keys = append(keys, k)
-	}
-
-	return keys
 }

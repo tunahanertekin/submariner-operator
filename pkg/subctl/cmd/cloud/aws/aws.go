@@ -20,21 +20,9 @@ limitations under the License.
 package aws
 
 import (
-	"encoding/json"
-	"os"
-	"path/filepath"
-
-	"github.com/pkg/errors"
 	"github.com/spf13/cobra"
-	"github.com/submariner-io/admiral/pkg/reporter"
-	"github.com/submariner-io/admiral/pkg/util"
-	"github.com/submariner-io/cloud-prepare/pkg/api"
-	aws "github.com/submariner-io/cloud-prepare/pkg/aws"
-	"github.com/submariner-io/cloud-prepare/pkg/ocp"
-	"github.com/submariner-io/submariner-operator/internal/exit"
-	"github.com/submariner-io/submariner-operator/internal/restconfig"
-	"github.com/submariner-io/submariner-operator/pkg/subctl/cmd/utils"
-	"k8s.io/client-go/dynamic"
+	cpaws "github.com/submariner-io/cloud-prepare/pkg/aws"
+	"github.com/submariner-io/submariner-operator/pkg/cloud/aws"
 )
 
 const (
@@ -42,100 +30,12 @@ const (
 	regionFlag  = "region"
 )
 
-var (
-	infraID         string
-	region          string
-	profile         string
-	credentialsFile string
-	ocpMetadataFile string
-)
-
 // AddAWSFlags adds basic flags needed by AWS.
-func AddAWSFlags(command *cobra.Command) {
-	command.Flags().StringVar(&infraID, infraIDFlag, "", "AWS infra ID")
-	command.Flags().StringVar(&region, regionFlag, "", "AWS region")
-	command.Flags().StringVar(&ocpMetadataFile, "ocp-metadata", "",
+func AddAWSFlags(command *cobra.Command, config *aws.Config) {
+	command.Flags().StringVar(&config.InfraID, infraIDFlag, "", "AWS infra ID")
+	command.Flags().StringVar(&config.Region, regionFlag, "", "AWS region")
+	command.Flags().StringVar(&config.OcpMetadataFile, "ocp-metadata", "",
 		"OCP metadata.json file (or directory containing it) to read AWS infra ID and region from (Takes precedence over the flags)")
-	command.Flags().StringVar(&profile, "profile", aws.DefaultProfile(), "AWS profile to use for credentials")
-	command.Flags().StringVar(&credentialsFile, "credentials", aws.DefaultCredentialsFile(), "AWS credentials configuration file")
-}
-
-// RunOnAWS runs the given function on AWS, supplying it with a cloud instance connected to AWS and a reporter that writes to CLI.
-// The functions makes sure that infraID and region are specified, and extracts the credentials from a secret in order to connect to AWS.
-func RunOnAWS(restConfigProducer restconfig.Producer, gwInstanceType string, status reporter.Interface,
-	function func(api.Cloud, api.GatewayDeployer, reporter.Interface) error,
-) error {
-	if ocpMetadataFile != "" {
-		err := initializeFlagsFromOCPMetadata(ocpMetadataFile)
-		exit.OnErrorWithMessage(err, "Failed to read AWS information from OCP metadata file")
-	} else {
-		utils.ExpectFlag(infraIDFlag, infraID)
-		utils.ExpectFlag(regionFlag, region)
-	}
-
-	status.Start("Initializing AWS connectivity")
-
-	awsCloud, err := aws.NewCloudFromSettings(credentialsFile, profile, infraID, region)
-	if err != nil {
-		return status.Error(err, "error loading default config")
-	}
-
-	status.End()
-
-	k8sConfig, err := restConfigProducer.ForCluster()
-	if err != nil {
-		return status.Error(err, "error initializing Kubernetes config")
-	}
-
-	restMapper, err := util.BuildRestMapper(k8sConfig.Config)
-	if err != nil {
-		return status.Error(err, "error creating REST mapper")
-	}
-
-	dynamicClient, err := dynamic.NewForConfig(k8sConfig.Config)
-	if err != nil {
-		return status.Error(err, "error creating dynamic client")
-	}
-
-	msDeployer := ocp.NewK8sMachinesetDeployer(restMapper, dynamicClient)
-
-	gwDeployer, err := aws.NewOcpGatewayDeployer(awsCloud, msDeployer, gwInstanceType)
-	if err != nil {
-		return status.Error(err, "error creating the gateway deployer")
-	}
-
-	return function(awsCloud, gwDeployer, status)
-}
-
-func initializeFlagsFromOCPMetadata(metadataFile string) error {
-	fileInfo, err := os.Stat(metadataFile)
-	if err != nil {
-		return errors.Wrapf(err, "failed to stat file %q", metadataFile)
-	}
-
-	if fileInfo.IsDir() {
-		metadataFile = filepath.Join(metadataFile, "metadata.json")
-	}
-
-	data, err := os.ReadFile(metadataFile)
-	if err != nil {
-		return errors.Wrapf(err, "error reading file %q", metadataFile)
-	}
-
-	var metadata struct {
-		InfraID string `json:"infraID"`
-		AWS     struct {
-			Region string `json:"region"`
-		} `json:"aws"`
-	}
-
-	err = json.Unmarshal(data, &metadata)
-	if err != nil {
-		return errors.Wrap(err, "error unmarshalling data")
-	}
-
-	infraID = metadata.InfraID
-	region = metadata.AWS.Region
-
-	return nil
+	command.Flags().StringVar(&config.Profile, "profile", cpaws.DefaultProfile(), "AWS profile to use for credentials")
+	command.Flags().StringVar(&config.CredentialsFile, "credentials", cpaws.DefaultCredentialsFile(), "AWS credentials configuration file")
 }

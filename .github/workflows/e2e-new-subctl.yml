@@ -11,7 +11,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Check out the repository
-        uses: actions/checkout@dcd71f646680f2efd8db4afa5ad64fdcba30e748
+        uses: actions/checkout@2541b1294d2704b0964813337f33b291d3f8596b
 
       - name: make old subctl
         run: |
@@ -63,3 +63,12 @@ jobs:
           cmd/bin/subctl verify --only connectivity --submariner-namespace=submariner-operator --verbose --connection-timeout 20 \
             --connection-attempts 4 --kubeconfig output/kubeconfigs/kind-config-cluster1:output/kubeconfigs/kind-config-cluster2 \
             --kubecontexts cluster1,cluster2
+
+      - name: Test diagnose
+        run: |
+          cmd/bin/subctl diagnose all --kubeconfig output/kubeconfigs/kind-config-cluster1
+          cmd/bin/subctl diagnose firewall inter-cluster output/kubeconfigs/kind-config-cluster1 output/kubeconfigs/kind-config-cluster2
+
+      - name: Test show
+        run: |
+          cmd/bin/subctl show all --kubeconfig output/kubeconfigs/kind-config-cluster1

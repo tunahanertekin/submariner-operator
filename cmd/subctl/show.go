@@ -16,18 +16,15 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package show
+package subctl
 
 import (
 	"github.com/spf13/cobra"
 	"github.com/submariner-io/submariner-operator/cmd/subctl/execute"
-	"github.com/submariner-io/submariner-operator/internal/restconfig"
 	"github.com/submariner-io/submariner-operator/internal/show"
-	"github.com/submariner-io/submariner-operator/pkg/subctl/cmd"
 )
 
 var (
-	restConfigProducer = restconfig.NewProducer()
 	// showCmd represents the show command.
 	showCmd = &cobra.Command{
 		Use:   "show",
@@ -93,7 +90,7 @@ var (
 
 func init() {
 	restConfigProducer.AddKubeConfigFlag(showCmd)
-	cmd.AddToRootCommand(showCmd)
+	rootCmd.AddCommand(showCmd)
 	showCmd.AddCommand(connectionsCmd)
 	showCmd.AddCommand(endpointsCmd)
 	showCmd.AddCommand(gatewaysCmd)

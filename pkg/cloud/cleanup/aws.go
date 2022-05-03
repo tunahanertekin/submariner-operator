@@ -19,25 +19,28 @@ limitations under the License.
 package cleanup
 
 import (
-	"github.com/spf13/cobra"
+	"github.com/submariner-io/admiral/pkg/reporter"
+	"github.com/submariner-io/cloud-prepare/pkg/api"
 	"github.com/submariner-io/submariner-operator/internal/restconfig"
+	"github.com/submariner-io/submariner-operator/pkg/cloud/aws"
 )
 
-var parentRestConfigProducer *restconfig.Producer
+var config aws.Config
 
-// NewCommand returns a new cobra.Command used to prepare a cloud infrastructure.
-func NewCommand(restConfigProducer *restconfig.Producer) *cobra.Command {
-	cmd := &cobra.Command{
-		Use:   "cleanup",
-		Short: "Clean up the cloud",
-		Long:  `This command cleans up the cloud after Submariner uninstallation.`,
+func AWS(restConfigProducer *restconfig.Producer, status reporter.Interface) error {
+	err := aws.RunOn(*restConfigProducer, &config, status,
+		// nolint:wrapcheck // No need to wrap errors here
+		func(cloud api.Cloud, gwDeployer api.GatewayDeployer, status reporter.Interface) error {
+			err := gwDeployer.Cleanup(status)
+			if err != nil {
+				return err
+			}
+
+			return cloud.CleanupAfterSubmariner(status)
+		})
+	if err != nil {
+		return status.Error(err, "Failed to cleanup AWS cloud")
 	}
-	parentRestConfigProducer = restConfigProducer
 
-	cmd.AddCommand(newAWSCleanupCommand(*parentRestConfigProducer))
-	cmd.AddCommand(newGCPCleanupCommand())
-	cmd.AddCommand(newRHOSCleanupCommand())
-	cmd.AddCommand(newGenericCleanupCommand())
-
-	return cmd
+	return nil
 }
