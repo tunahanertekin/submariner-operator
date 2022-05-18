@@ -19,8 +19,6 @@ limitations under the License.
 package submariner
 
 import (
-	"strconv"
-
 	"github.com/go-logr/logr"
 	"github.com/submariner-io/submariner-operator/api/submariner/v1alpha1"
 	"github.com/submariner-io/submariner-operator/controllers/helpers"
@@ -46,7 +44,7 @@ func (r *Reconciler) reconcileLoadBalancer(
 }
 
 func newLoadBalancerService(instance *v1alpha1.Submariner) *corev1.Service {
-	nattPort, _ := strconv.ParseInt(submv1.DefaultNATTDiscoveryPort, 10, 32)
+	// nattPort, _ := strconv.ParseInt(submv1.DefaultNATTDiscoveryPort, 10, 32)
 
 	return &corev1.Service{
 		ObjectMeta: v1meta.ObjectMeta{
@@ -74,8 +72,8 @@ func newLoadBalancerService(instance *v1alpha1.Submariner) *corev1.Service {
 				},
 				{
 					Name:       nattDiscoveryPortName,
-					Port:       int32(nattPort),
-					TargetPort: intstr.IntOrString{Type: intstr.Int, IntVal: int32(nattPort)},
+					Port:       int32(instance.Spec.CeNatDiscovery),
+					TargetPort: intstr.IntOrString{Type: intstr.Int, IntVal: int32(instance.Spec.CeNatDiscovery)},
 					Protocol:   corev1.ProtocolUDP,
 				},
 			},

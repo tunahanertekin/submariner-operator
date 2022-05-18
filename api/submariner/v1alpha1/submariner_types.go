@@ -52,7 +52,7 @@ type SubmarinerSpec struct {
 	Version                  string               `json:"version,omitempty"`
 	CeIPSecIKEPort           int                  `json:"ceIPSecIKEPort,omitempty"`
 	CeIPSecNATTPort          int                  `json:"ceIPSecNATTPort,omitempty"`
-	CeNatDiscovery           uint                 `json:"CeNatDiscovery,omitempty"`
+	CeNatDiscovery           int                  `json:"CeNatDiscovery,omitempty"`
 	CeIPSecDebug             bool                 `json:"ceIPSecDebug"`
 	CeIPSecPreferredServer   bool                 `json:"ceIPSecPreferredServer,omitempty"`
 	CeIPSecForceUDPEncaps    bool                 `json:"ceIPSecForceUDPEncaps,omitempty"`
