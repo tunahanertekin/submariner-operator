@@ -1,7 +1,7 @@
 domain: submariner.io
 layout: go.kubebuilder.io/v2
 projectName: submariner
-repo: github.com/submariner-io/submariner-operator
+repo: github.com/tunahanertekin/submariner-operator
 version: 3-alpha
 multigroup: true
 plugins:

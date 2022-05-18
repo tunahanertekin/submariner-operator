@@ -23,8 +23,8 @@ import (
 	"fmt"
 
 	"github.com/go-logr/logr"
-	"github.com/submariner-io/submariner-operator/controllers/helpers"
-	"github.com/submariner-io/submariner-operator/pkg/metrics"
+	"github.com/tunahanertekin/submariner-operator/controllers/helpers"
+	"github.com/tunahanertekin/submariner-operator/pkg/metrics"
 	corev1 "k8s.io/api/core/v1"
 	k8serrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"

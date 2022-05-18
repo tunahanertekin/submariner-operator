@@ -23,8 +23,8 @@ import (
 
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
-	apis "github.com/submariner-io/submariner-operator/api/submariner/v1alpha1"
-	"github.com/submariner-io/submariner-operator/pkg/images"
+	apis "github.com/tunahanertekin/submariner-operator/api/submariner/v1alpha1"
+	"github.com/tunahanertekin/submariner-operator/pkg/images"
 )
 
 var imageTests = []struct {

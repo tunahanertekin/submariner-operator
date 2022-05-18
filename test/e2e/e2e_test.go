@@ -21,7 +21,7 @@ import (
 	"testing"
 
 	"github.com/submariner-io/shipyard/test/e2e"
-	_ "github.com/submariner-io/submariner-operator/test/e2e/cleanup"
+	_ "github.com/tunahanertekin/submariner-operator/test/e2e/cleanup"
 )
 
 func TestE2E(t *testing.T) {

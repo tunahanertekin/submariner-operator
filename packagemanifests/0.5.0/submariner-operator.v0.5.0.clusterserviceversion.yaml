@@ -75,7 +75,7 @@ metadata:
     certified: 'false'
     containerImage: quay.io/submariner/submariner-operator:0.5.0
     description: Operator that creates and manages Submariner engines and route agents.
-    repository: https://github.com/submariner-io/submariner-operator
+    repository: https://github.com/tunahanertekin/submariner-operator
     support: Submariner
     createdAt: 2020-07-20 07:00:00
     operators.operatorframework.io/builder: operator-sdk-v0.19.0
@@ -115,8 +115,8 @@ spec:
 
     ## Deployment
 
-    Submariner provides an [Operator](https://github.com/submariner-io/submariner-operator) for easy API-based installation and management.
-    A command line utility, [subctl](https://github.com/submariner-io/submariner-operator/releases), wraps the Operator to aid users with manual deployments and easy experimentation.
+    Submariner provides an [Operator](https://github.com/tunahanertekin/submariner-operator) for easy API-based installation and management.
+    A command line utility, [subctl](https://github.com/tunahanertekin/submariner-operator/releases), wraps the Operator to aid users with manual deployments and easy experimentation.
     subctl greatly simplifies the deployment of Submariner, and is therefore the recommended deployment method.
     For complete information about subctl, please refer to [this page](https://submariner.io/deployment/subctl).
     In addition to Operator and subctl, Submariner also provides [Helm Charts](https://submariner.io/deployment/helm).

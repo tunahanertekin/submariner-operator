@@ -23,8 +23,8 @@ import (
 
 	. "github.com/onsi/gomega"
 	admtest "github.com/submariner-io/admiral/pkg/test"
-	"github.com/submariner-io/submariner-operator/controllers/resource"
-	"github.com/submariner-io/submariner-operator/controllers/uninstall"
+	"github.com/tunahanertekin/submariner-operator/controllers/resource"
+	"github.com/tunahanertekin/submariner-operator/controllers/uninstall"
 	appsv1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/errors"

@@ -19,7 +19,7 @@ limitations under the License.
 package api
 
 import (
-	"github.com/submariner-io/submariner-operator/api/submariner/v1alpha1"
+	"github.com/tunahanertekin/submariner-operator/api/submariner/v1alpha1"
 )
 
 func init() {

@@ -2,9 +2,9 @@
 
 <!-- markdownlint-disable line-length -->
 [![CII Best Practices](https://bestpractices.coreinfrastructure.org/projects/4865/badge)](https://bestpractices.coreinfrastructure.org/projects/4865)
-[![Release Images](https://github.com/submariner-io/submariner-operator/workflows/Release%20Images/badge.svg)](https://github.com/submariner-io/submariner-operator/actions?query=workflow%3A%22Release+Images%22)
-[![Periodic](https://github.com/submariner-io/submariner-operator/workflows/Periodic/badge.svg)](https://github.com/submariner-io/submariner-operator/actions?query=workflow%3APeriodic)
-[![Flake Finder](https://github.com/submariner-io/submariner-operator/workflows/Flake%20Finder/badge.svg)](https://github.com/submariner-io/submariner-operator/actions?query=workflow%3A%22Flake+Finder%22)
+[![Release Images](https://github.com/tunahanertekin/submariner-operator/workflows/Release%20Images/badge.svg)](https://github.com/tunahanertekin/submariner-operator/actions?query=workflow%3A%22Release+Images%22)
+[![Periodic](https://github.com/tunahanertekin/submariner-operator/workflows/Periodic/badge.svg)](https://github.com/tunahanertekin/submariner-operator/actions?query=workflow%3APeriodic)
+[![Flake Finder](https://github.com/tunahanertekin/submariner-operator/workflows/Flake%20Finder/badge.svg)](https://github.com/tunahanertekin/submariner-operator/actions?query=workflow%3A%22Flake+Finder%22)
 <!-- markdownlint-enable line-length -->
 
 The Submariner Operator installs the Submariner components on a Kubernetes cluster. It's also available on
@@ -25,12 +25,12 @@ Please refer the Quickstart Guides on Submariner's website:
 
 ### Latest Stable Release
 
-This release has the latest stable binaries: [latest release](https://github.com/submariner-io/submariner-operator/releases/latest).
+This release has the latest stable binaries: [latest release](https://github.com/tunahanertekin/submariner-operator/releases/latest).
 
 ### Latest Merged Release
 
 This release is constantly updated with the latest code, and might be unstable: [devel
-release](https://github.com/submariner-io/submariner-operator/releases/tag/subctl-devel).
+release](https://github.com/tunahanertekin/submariner-operator/releases/tag/subctl-devel).
 
 ## Building and Testing
 

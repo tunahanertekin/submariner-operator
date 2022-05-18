@@ -11,7 +11,7 @@ metadata:
     operatorframework.io/suggested-namespace: submariner-operator
     operators.operatorframework.io/builder: operator-sdk-v1.0.1
     operators.operatorframework.io/project_layout: go.kubebuilder.io/v2
-    repository: https://github.com/submariner-io/submariner-operator
+    repository: https://github.com/tunahanertekin/submariner-operator
     support: Submariner
   name: submariner.v0.0.0
   namespace: placeholder
@@ -50,9 +50,9 @@ spec:
     ```
 
     ### Deployment
-    Submariner provides an [Operator](https://github.com/submariner-io/submariner-operator) for easy API-based
+    Submariner provides an [Operator](https://github.com/tunahanertekin/submariner-operator) for easy API-based
     installation and management.
-    A command line utility, [subctl](https://github.com/submariner-io/submariner-operator/releases), wraps the
+    A command line utility, [subctl](https://github.com/tunahanertekin/submariner-operator/releases), wraps the
     Operator to aid users with manual deployments and easy experimentation.
     subctl greatly simplifies the deployment of Submariner, and is therefore the recommended deployment method.
     For complete information about subctl, please refer to [this page](https://submariner.io/operations/deployment/subctl).
@@ -63,7 +63,7 @@ spec:
     2. Apply the broker RBAC definitions:
 
         ```shell
-        git clone --depth 1 --single-branch --branch release-$(SHORT_VERSION) https://github.com/submariner-io/submariner-operator
+        git clone --depth 1 --single-branch --branch release-$(SHORT_VERSION) https://github.com/tunahanertekin/submariner-operator
         kubectl apply -k submariner-operator/config/broker -n submariner-k8s-broker
         ```
 

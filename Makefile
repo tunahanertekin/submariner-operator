@@ -158,7 +158,7 @@ $(EMBEDDED_YAMLS): pkg/embeddedyamls/generators/yamls2go.go deploy/crds/submarin
 
 bin/submariner-operator: $(VENDOR_MODULES) main.go $(EMBEDDED_YAMLS)
 	${SCRIPTS_DIR}/compile.sh \
-	--ldflags "-X=github.com/submariner-io/submariner-operator/pkg/version.Version=$(VERSION)" \
+	--ldflags "-X=github.com/tunahanertekin/submariner-operator/pkg/version.Version=$(VERSION)" \
 	$@ . $(BUILD_ARGS)
 
 ci: $(EMBEDDED_YAMLS) golangci-lint markdownlint unit build images
@@ -188,8 +188,8 @@ generate-clientset: $(VENDOR_MODULES)
 	cd $${GOPATH}/src/k8s.io/code-generator && $(GO) mod vendor
 	GO111MODULE=on $${GOPATH}/src/k8s.io/code-generator/generate-groups.sh \
 		client,deepcopy \
-		github.com/submariner-io/submariner-operator/pkg/client \
-		github.com/submariner-io/submariner-operator/api \
+		github.com/tunahanertekin/submariner-operator/pkg/client \
+		github.com/tunahanertekin/submariner-operator/api \
 		submariner:v1alpha1
 
 # Generate manifests e.g. CRD, RBAC etc

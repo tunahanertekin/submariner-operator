@@ -23,8 +23,8 @@ import (
 
 	"github.com/go-logr/logr"
 	"github.com/pkg/errors"
-	submopv1a1 "github.com/submariner-io/submariner-operator/api/submariner/v1alpha1"
-	"github.com/submariner-io/submariner-operator/pkg/discovery/network"
+	submopv1a1 "github.com/tunahanertekin/submariner-operator/api/submariner/v1alpha1"
+	"github.com/tunahanertekin/submariner-operator/pkg/discovery/network"
 )
 
 func (r *Reconciler) getClusterNetwork(submariner *submopv1a1.Submariner) (*network.ClusterNetwork, error) {

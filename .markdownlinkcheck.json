@@ -4,7 +4,7 @@
       "pattern": "^https://github.com/\\S+/\\S+/(issues|pull)/[0-9]+"
     },
     {
-      "pattern": "^https://github.com/submariner-io/submariner-operator/workflows/(.*)/badge.svg"
+      "pattern": "^https://github.com/tunahanertekin/submariner-operator/workflows/(.*)/badge.svg"
     },
     {
       "pattern": "^http://localhost:"

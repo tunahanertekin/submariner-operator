@@ -20,10 +20,10 @@ package submariner
 
 import (
 	"github.com/go-logr/logr"
-	"github.com/submariner-io/submariner-operator/api/submariner/v1alpha1"
-	"github.com/submariner-io/submariner-operator/controllers/helpers"
-	"github.com/submariner-io/submariner-operator/pkg/names"
 	submv1 "github.com/submariner-io/submariner/pkg/apis/submariner.io/v1"
+	"github.com/tunahanertekin/submariner-operator/api/submariner/v1alpha1"
+	"github.com/tunahanertekin/submariner-operator/controllers/helpers"
+	"github.com/tunahanertekin/submariner-operator/pkg/names"
 	corev1 "k8s.io/api/core/v1"
 	v1meta "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/util/intstr"
